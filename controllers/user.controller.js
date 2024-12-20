@@ -11,11 +11,11 @@ const updateUser = async (req, res, next) => {
 		if (password.length < 6) {
 			return res.status(400).json('Password must be at least 6 characters');
 		}
-		password = bcryptjs.hashSync(password, 10);
 	}
 
 	try {
 		const user = await User.findByPk(req.params.id);
+		const newPassword = bcryptjs.hashSync(password, 10);
 
 		if (!user) {
 			return res.status(404).json('User not found');
@@ -26,7 +26,7 @@ const updateUser = async (req, res, next) => {
 				email,
 				fullname,
 				phone,
-				password: password || undefined,
+				password: newPassword || undefined,
 			},
 			{
 				where: { id: req.params.id },

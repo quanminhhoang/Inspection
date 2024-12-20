@@ -10,11 +10,11 @@ const {
 	findAll,
 } = require('../controllers/user.controller.js');
 
-router.get('/findByUsername/:username', authUser, findByUsername);
-router.get('/', authAdmin, findAll);
-router.get('/:id', authUser, findById);
+router.get('/findByUsername/:username', findByUsername);
+router.get('/', findAll);
+router.get('/:id', findById);
 
-router.put('/:id', authAdmin, updateUser);
-router.delete('/:id', authAdmin, deleteUser);
+router.put('/:id', updateUser);
+router.delete('/:id', deleteUser);
 
 module.exports = router;

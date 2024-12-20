@@ -16,6 +16,15 @@ module.exports = (sequelize, DataTypes) => {
 			allowNull: false,
 			unique: true,
 		},
+		color: {
+			type: DataTypes.STRING,
+			allowNull: false,
+		},
+		purpose: {
+			type: DataTypes.ENUM('personal', 'business', 'unknown'),
+			allowNull: false,
+			defaultValue: 'unknown',
+		},
 		make: {
 			type: DataTypes.STRING,
 			allowNull: false,
@@ -26,6 +35,34 @@ module.exports = (sequelize, DataTypes) => {
 		},
 		year: {
 			type: DataTypes.INTEGER,
+			allowNull: false,
+		},
+		ownerName: {
+			type: DataTypes.STRING,
+			allowNull: false,
+			validate: {
+				notEmpty: {
+					msg: 'Fullname is required',
+				},
+			},
+		},
+		ownerPhone: {
+			type: DataTypes.STRING,
+			allowNull: true,
+			unique: true,
+			validate: {
+				isMobilePhone: {
+					args: ['any', 'en-US'],
+					msg: 'Please enter a valid phone number',
+				},
+			},
+		},
+		ownerId: {
+			type: DataTypes.INTEGER,
+			allowNull: false,
+		},
+		expiredAt: {
+			type: DataTypes.DATE,
 			allowNull: false,
 		},
 		createdAt: {

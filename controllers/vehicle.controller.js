@@ -3,15 +3,30 @@ const Vehicle = db.vehicle;
 const Op = db.Op;
 
 const createVehicle = async (req, res, next) => {
-	const { plate, make, model, year } = req.body;
+	const {
+		plate,
+		make,
+		model,
+		year,
+		ownerId,
+		ownerPhone,
+		ownerName,
+		color,
+		purpose,
+	} = req.body;
 
 	// Validate input
-	if (!plate || !make || !model || !year) {
-		return next(
-			res
-				.status(400)
-				.json('All fields (plate, make, model, year) are required.')
-		);
+	if (
+		!plate ||
+		!make ||
+		!model ||
+		!year ||
+		!ownerId ||
+		!ownerName ||
+		!color ||
+		!purpose
+	) {
+		return res.status(400).json('All fields are required.');
 	}
 
 	if (year < 1886 || year > new Date().getFullYear() + 1) {
@@ -20,9 +35,31 @@ const createVehicle = async (req, res, next) => {
 		);
 	}
 
+	const validPurposes = ['personal', 'business', 'unknown'];
+	if (!validPurposes.includes(purpose)) {
+		return res
+			.status(400)
+			.json('Purpose must be personal, business, or unknown.');
+	}
+
 	try {
+		const currentDate = new Date();
+		const expiredAt = new Date(
+			currentDate.setFullYear(currentDate.getFullYear() + 1)
+		);
 		// Create the vehicle
-		const vehicle = await Vehicle.create({ plate, make, model, year });
+		const vehicle = await Vehicle.create({
+			plate,
+			make,
+			model,
+			year,
+			ownerId,
+			ownerPhone,
+			ownerName,
+			color,
+			purpose,
+			expiredAt,
+		});
 		res.status(201).json(vehicle);
 	} catch (error) {
 		// Handle unique constraint error for plate
@@ -34,28 +71,50 @@ const createVehicle = async (req, res, next) => {
 };
 
 const updateVehicle = async (req, res, next) => {
-	const { status, plate, make, model, year } = req.body;
-	const validStatuses = ['in_process', 'rejected', 'approved'];
+	const {
+		status,
+		plate,
+		make,
+		model,
+		year,
+		ownerId,
+		ownerPhone,
+		ownerName,
+		expiredAt,
+		color,
+		purpose,
+	} = req.body;
 
+	const validStatuses = ['in_process', 'rejected', 'approved'];
 	if (status && !validStatuses.includes(status)) {
-		return res
-			.status(400)
-			.json(
-				'Status must be one of the following: in_process, rejected, approved.'
-			);
+		return res.status(400).json('Invalid status.');
+	}
+
+	const validPurposes = ['personal', 'business', 'unknown'];
+	if (purpose && !validPurposes.includes(purpose)) {
+		return res.status(400).json('Invalid purpose.');
 	}
 
 	try {
 		const [updated] = await Vehicle.update(
-			{ status, plate, make, model, year },
 			{
-				where: { id: req.params.id },
-				returning: true, // Ensures the updated row is returned
-			}
+				status,
+				plate,
+				make,
+				model,
+				year,
+				ownerId,
+				ownerPhone,
+				ownerName,
+				expiredAt,
+				color,
+				purpose,
+			},
+			{ where: { id: req.params.id }, returning: true }
 		);
 
 		if (updated === 0) {
-			return res.status(404).json('Vehicle not found');
+			return res.status(404).json('Vehicle not found.');
 		}
 
 		const updatedVehicle = await Vehicle.findOne({
@@ -165,22 +224,18 @@ const viewVehicleStatistics = async (req, res, next) => {
 
 const viewExpireVehicles = async (req, res, next) => {
 	try {
-		const oneYearAgo = db.sequelize.fn(
-			'DATE_SUB',
-			db.sequelize.fn('NOW'),
-			db.sequelize.literal('INTERVAL 1 YEAR')
-		);
+		const currentDate = new Date();
 
 		const expiredVehicles = await Vehicle.findAll({
 			where: {
-				createdAt: {
-					[db.Op.lt]: oneYearAgo,
+				expiredAt: {
+					[Op.lte]: currentDate,
 				},
 			},
 		});
 
-		if (!expiredVehicles.length) {
-			return res.status(404).json('No expired vehicles found.');
+		if (expiredVehicles.length === 0) {
+			return res.status(404).json({ message: 'No expired vehicles found.' });
 		}
 
 		res.status(200).json(expiredVehicles);
